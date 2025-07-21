@@ -169,11 +169,10 @@
       let gilOff = Z === 99 ? 980 - 50 * M : M < 3 ? 10 * Z - 60 : 10 * Z - 160;
       const base = M * 150 + Z * 30 + gilFloat + gilOff;
       const dph = Math.floor(2 * base + 20);
-      const rawHits = Math.ceil(G / dph); // ← FIXED FORMULA
+      const rawHits = Math.ceil(G / dph);
       const clamped = Math.min(rawHits, 5);
-      const displayHits = clamped;         // ← SIMPLIFIED LOGIC
-      const gilRem = Math.max(G - displayHits * dph, 0);
-      const totalDamage = displayHits * dph;
+      const gilRem = Math.max(G - clamped * dph, 0);
+      const totalDamage = clamped * dph;
 
       lvlLabel.textContent = Z;
       matLabel.textContent = M;
@@ -181,7 +180,7 @@
       finalDiv.innerHTML = `
         <div class="results-title">Final Results</div>
         <div>Total Damage: <span>${totalDamage.toLocaleString()}</span></div>
-        <div>Hits: <span>${displayHits}</span></div>
+        <div>Hits: <span>${clamped}</span></div>
         <div>Damage Per Hit: <span>${dph.toLocaleString()}</span></div>
         <div>Gil Consumed: <span>${(totalDamage).toLocaleString()}</span></div>
         <div>Gil Remaining: <span>${gilRem.toLocaleString()}</span></div>
@@ -214,13 +213,8 @@
           <div class="result">Hits before clamp: ${rawHits}, after clamp: ${clamped}</div>
         </div>
         <div class="step">
-          <h3>STEP 6: FINAL HITS</h3>
-          <span class="code">display_hits = ${clamped}</span>
-          <div class="result">Result: ${displayHits}</div>
-        </div>
-        <div class="step">
-          <h3>STEP 7: GIL_REMAINING</h3>
-          <span class="code">${G} − (${displayHits} × ${dph})</span>
+          <h3>STEP 6: GIL_REMAINING</h3>
+          <span class="code">${G} − (${clamped} × ${dph})</span>
           <div class="result">Result: ${gilRem}</div>
         </div>
       `;
@@ -232,7 +226,6 @@
       updateUI();
     };
 
-    // Initial render
     updateUI();
   </script>
 </body>
