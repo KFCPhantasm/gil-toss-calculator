@@ -62,17 +62,6 @@
       border-radius: 4px;
       color: #f8f8f2;
     }
-    button {
-      width: 100%;
-      margin: 1.5em 0;
-      padding: 0.8em;
-      background: #ffcb6b;
-      color: #1e1e2f;
-      border: none;
-      border-radius: 4px;
-      font-size: 1em;
-      cursor: pointer;
-    }
     .results {
       background: #1c1d2a;
       border: 1px solid #444;
@@ -147,16 +136,7 @@
         <label>Materia Level: <span id="matLabel">1</span></label>
         <input type="range" id="matLevel" min="1" max="5" value="1"/>
         <label>Current Gil:</label>
-        <input type="number" id="gilInput" min="1" max="999999999" step="1" value="1000"
-          oninput="
-            if (this.value === '') return;
-            let v = parseInt(this.value.replace(/\D/g,''), 10);
-            if (isNaN(v) || v < 1) v = 1;
-            if (v > 999999999) v = 999999999;
-            this.value = v;
-          "
-        />
-        <button id="calcBtn">Calculate</button>
+        <input type="number" id="gilInput" min="1" max="999999999" step="1" value="1000"/>
         <div class="results" id="finalResults">
           <div class="results-title">Final Results</div>
         </div>
@@ -167,24 +147,22 @@
       </section>
     </div>
   </div>
+
   <script>
     const lvlSlider = document.getElementById('zackLevel');
     const matSlider = document.getElementById('matLevel');
     const gilInput = document.getElementById('gilInput');
     const lvlLabel = document.getElementById('lvlLabel');
     const matLabel = document.getElementById('matLabel');
-    const calcBtn = document.getElementById('calcBtn');
     const finalDiv = document.getElementById('finalResults');
     const stepsDiv = document.getElementById('steps');
 
-    lvlSlider.oninput = () => lvlLabel.textContent = lvlSlider.value;
-    matSlider.oninput = () => matLabel.textContent = matSlider.value;
-
-    calcBtn.addEventListener('click', () => {
+    function updateUI() {
       const Z = +lvlSlider.value;
       const M = +matSlider.value;
-      let G = parseInt(gilInput.value, 10);
-      G = Math.min(Math.max(G, 1), 999999999);
+      let G = parseInt(gilInput.value.replace(/\D/g, ''), 10);
+      if (isNaN(G) || G < 1) G = 1;
+      if (G > 999999999) G = 999999999;
       gilInput.value = G;
 
       const gilFloat = G / 1000;
@@ -196,6 +174,9 @@
       const displayHits = rawHits === 0 ? ((G === 1 || G >= dph / 100) ? 1 : 0) : clamped;
       const gilRem = Math.max(G - displayHits * dph, 0);
       const totalDamage = displayHits * dph;
+
+      lvlLabel.textContent = Z;
+      matLabel.textContent = M;
 
       finalDiv.innerHTML = `
         <div class="results-title">Final Results</div>
@@ -243,9 +224,16 @@
           <div class="result">Result: ${gilRem}</div>
         </div>
       `;
-    });
+    }
 
-    calcBtn.click();
+    lvlSlider.oninput = updateUI;
+    matSlider.oninput = updateUI;
+    gilInput.oninput = () => {
+      updateUI();
+    };
+
+    // Initial render
+    updateUI();
   </script>
 </body>
 </html>
