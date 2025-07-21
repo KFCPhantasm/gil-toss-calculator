@@ -169,9 +169,9 @@
       let gilOff = Z === 99 ? 980 - 50 * M : M < 3 ? 10 * Z - 60 : 10 * Z - 160;
       const base = M * 150 + Z * 30 + gilFloat + gilOff;
       const dph = Math.floor(2 * base + 20);
-      const rawHits = Math.round((G + 4) / dph);
+      const rawHits = Math.ceil(G / dph); // ← FIXED FORMULA
       const clamped = Math.min(rawHits, 5);
-      const displayHits = rawHits === 0 ? ((G === 1 || G >= dph / 100) ? 1 : 0) : clamped;
+      const displayHits = clamped;         // ← SIMPLIFIED LOGIC
       const gilRem = Math.max(G - displayHits * dph, 0);
       const totalDamage = displayHits * dph;
 
@@ -210,12 +210,12 @@
         </div>
         <div class="step">
           <h3>STEP 5: RAW_HITS & CLAMP</h3>
-          <span class="code">round((${G} + 4) ÷ ${dph}) → ${rawHits}<br/>clamped to max 5</span>
+          <span class="code">ceil(${G} ÷ ${dph}) → ${rawHits}<br/>clamped to max 5</span>
           <div class="result">Hits before clamp: ${rawHits}, after clamp: ${clamped}</div>
         </div>
         <div class="step">
           <h3>STEP 6: FINAL HITS</h3>
-          <span class="code">${rawHits} == 0 ? ${(G === 1 || G >= dph / 100) ? 'display_hits = 1' : 'display_hits = 0'} : display_hits = ${clamped}</span>
+          <span class="code">display_hits = ${clamped}</span>
           <div class="result">Result: ${displayHits}</div>
         </div>
         <div class="step">
