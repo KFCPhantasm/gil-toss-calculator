@@ -5,33 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>FFVII: Crisis Core Reunion – Gil Toss Calculator</title>
   <style>
-    /* ===== Global Styles ===== */
-    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', sans-serif;
       background: #1e1e2f;
       color: #f8f8f2;
       line-height: 1.4;
+      margin: 0;
+      padding: 0;
     }
     h1, h2, h3 {
       margin-bottom: .5em;
       color: #ffcb6b;
     }
-    a {
-      color: #8be9fd;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-    hr {
-      border: none;
-      height: 1px;
-      background: #44475a;
-      margin: 1em 0;
-    }
-
-    /* ===== Layout ===== */
     .container {
       max-width: 1200px;
       margin: 2em auto;
@@ -40,6 +25,16 @@
     .header {
       text-align: center;
       margin-bottom: 2em;
+    }
+    .header h2 {
+      color: #cccccc;
+    }
+    a {
+      color: #8be9fd;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
     }
     .main {
       display: flex;
@@ -57,21 +52,17 @@
       margin-top: 1em;
       font-weight: bold;
     }
-    input[type="range"] {
-      width: 100%;
-      margin-top: .5em;
-    }
+    input[type="range"],
     input[type="number"] {
       width: 100%;
-      padding: .4em;
       margin-top: .5em;
+      padding: .4em;
       background: #44475a;
       border: none;
       border-radius: 4px;
       color: #f8f8f2;
     }
     button {
-      display: block;
       width: 100%;
       margin: 1.5em 0;
       padding: 0.8em;
@@ -83,13 +74,38 @@
       cursor: pointer;
     }
     .results {
-      margin-top: 1em;
+      background: #1c1d2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 1em;
+      font-weight: bold;
+      margin-top: 2em;
+    }
+    .results-title {
+      font-size: 1.2em;
+      color: #ffcb6b;
+      margin-bottom: 0.8em;
+      text-align: center;
     }
     .results div {
-      margin-bottom: .5em;
+      font-size: 1.1em;
+      margin: .3em 0;
+      display: flex;
+      justify-content: space-between;
     }
-
-    /* ===== Breakdown Boxes ===== */
+    .results span {
+      color: #ffcb6b;
+    }
+    .breakdown {
+      padding-top: 0;
+    }
+    .breakdown-title {
+      font-size: 1.5em;
+      margin-bottom: 1em;
+      border-bottom: 2px solid #ffcb6b;
+      padding-bottom: .3em;
+      color: #ffcb6b;
+    }
     .breakdown .step {
       background: #21222c;
       padding: 1em;
@@ -99,14 +115,15 @@
     .step h3 {
       font-size: 1.1em;
       margin-bottom: .5em;
+      color: #ffcb6b;
     }
     .step .code {
-      display: block;
       background: #282a36;
       padding: .6em;
       border-radius: 4px;
       font-family: Consolas, monospace;
       margin: .5em 0;
+      display: block;
     }
     .step .result {
       font-weight: bold;
@@ -119,26 +136,18 @@
   <div class="container">
     <header class="header">
       <h1>FINAL FANTASY VII: CRISIS CORE REUNION</h1>
-      <h2>Gil Toss Mechanics Calculator</h2>
-      <p>Reverse‑engineered by <strong><a href="https://www.youtube.com/@KFCPhantasm" target="_blank">KFCPHANTASM</a></strong></p>
+      <h2>Gil Toss Damage Calculator</h2>
+      <p>Reverse-engineered by <a href="https://www.youtube.com/@KFCPhantasm" target="_blank">KFCPHANTASM</a></p>
     </header>
-
     <div class="main">
-      <!-- Sidebar Inputs -->
       <aside class="panel sidebar">
         <h3>Parameters</h3>
         <label>Zack’s Level: <span id="lvlLabel">50</span></label>
         <input type="range" id="zackLevel" min="6" max="99" value="50"/>
-
         <label>Materia Level: <span id="matLabel">1</span></label>
         <input type="range" id="matLevel" min="1" max="5" value="1"/>
-
         <label>Current Gil:</label>
-        <input
-          type="number"
-          id="gilInput"
-          min="1" max="999999999" step="1"
-          value="1000"
+        <input type="number" id="gilInput" min="1" max="999999999" step="1" value="1000"
           oninput="
             if (this.value === '') return;
             let v = parseInt(this.value.replace(/\D/g,''), 10);
@@ -147,26 +156,26 @@
             this.value = v;
           "
         />
-
         <button id="calcBtn">Calculate</button>
-
-        <div class="results" id="finalResults"></div>
+        <div class="results" id="finalResults">
+          <div class="results-title">Final Results</div>
+        </div>
       </aside>
-
-      <!-- Calculation Breakdown -->
-      <section class="panel breakdown"></section>
+      <section class="panel breakdown">
+        <div class="breakdown-title">Calculation Breakdown</div>
+        <div id="steps"></div>
+      </section>
     </div>
   </div>
-
   <script>
     const lvlSlider = document.getElementById('zackLevel');
     const matSlider = document.getElementById('matLevel');
-    const gilInput  = document.getElementById('gilInput');
-    const lvlLabel  = document.getElementById('lvlLabel');
-    const matLabel  = document.getElementById('matLabel');
-    const calcBtn   = document.getElementById('calcBtn');
-    const finalDiv  = document.getElementById('finalResults');
-    const breakdown = document.querySelector('.breakdown');
+    const gilInput = document.getElementById('gilInput');
+    const lvlLabel = document.getElementById('lvlLabel');
+    const matLabel = document.getElementById('matLabel');
+    const calcBtn = document.getElementById('calcBtn');
+    const finalDiv = document.getElementById('finalResults');
+    const stepsDiv = document.getElementById('steps');
 
     lvlSlider.oninput = () => lvlLabel.textContent = lvlSlider.value;
     matSlider.oninput = () => matLabel.textContent = matSlider.value;
@@ -174,28 +183,30 @@
     calcBtn.addEventListener('click', () => {
       const Z = +lvlSlider.value;
       const M = +matSlider.value;
-
-      let rawG = parseInt(gilInput.value, 10) || 1;
-      const G = Math.min(Math.max(rawG, 1), 999999999);
+      let G = parseInt(gilInput.value, 10);
+      G = Math.min(Math.max(G, 1), 999999999);
       gilInput.value = G;
 
       const gilFloat = G / 1000;
-      let gilOff;
-      if (Z === 99) gilOff = 980 - 50 * M;
-      else if (M < 3) gilOff = 10 * Z - 60;
-      else gilOff = 10 * Z - 160;
-
+      let gilOff = Z === 99 ? 980 - 50 * M : M < 3 ? 10 * Z - 60 : 10 * Z - 160;
       const base = M * 150 + Z * 30 + gilFloat + gilOff;
       const dph = Math.floor(2 * base + 20);
       const rawHits = Math.round((G + 4) / dph);
       const clamped = Math.min(rawHits, 5);
-      const displayHits = rawHits === 0
-        ? ((G === 1 || G >= dph / 100) ? 1 : 0)
-        : clamped;
+      const displayHits = rawHits === 0 ? ((G === 1 || G >= dph / 100) ? 1 : 0) : clamped;
       const gilRem = Math.max(G - displayHits * dph, 0);
       const totalDamage = displayHits * dph;
 
-      breakdown.innerHTML = `
+      finalDiv.innerHTML = `
+        <div class="results-title">Final Results</div>
+        <div>Total Damage: <span>${totalDamage.toLocaleString()}</span></div>
+        <div>Hits: <span>${displayHits}</span></div>
+        <div>Damage Per Hit: <span>${dph.toLocaleString()}</span></div>
+        <div>Gil Consumed: <span>${(totalDamage).toLocaleString()}</span></div>
+        <div>Gil Remaining: <span>${gilRem.toLocaleString()}</span></div>
+      `;
+
+      stepsDiv.innerHTML = `
         <div class="step">
           <h3>STEP 1: GIL_FLOAT</h3>
           <span class="code">GIL_FLOAT = ${G} ÷ 1000.0</span>
@@ -203,13 +214,7 @@
         </div>
         <div class="step">
           <h3>STEP 2: GIL_OFFSET</h3>
-          <span class="code">${
-            Z === 99
-              ? `980 − (50 × ${M})`
-              : M < 3
-                ? `(10 × ${Z}) − 60`
-                : `(10 × ${Z}) − 160`
-          }</span>
+          <span class="code">${Z === 99 ? `980 − (50 × ${M})` : M < 3 ? `(10 × ${Z}) − 60` : `(10 × ${Z}) − 160`}</span>
           <div class="result">Result: ${gilOff}</div>
         </div>
         <div class="step">
@@ -229,9 +234,7 @@
         </div>
         <div class="step">
           <h3>STEP 6: FINAL HITS</h3>
-          <span class="code">${rawHits} == 0 ? ${
-            (G === 1 || G >= dph / 100) ? 'display_hits = 1' : 'display_hits = 0'
-          } : display_hits = ${clamped}</span>
+          <span class="code">${rawHits} == 0 ? ${(G === 1 || G >= dph / 100) ? 'display_hits = 1' : 'display_hits = 0'} : display_hits = ${clamped}</span>
           <div class="result">Result: ${displayHits}</div>
         </div>
         <div class="step">
@@ -239,14 +242,6 @@
           <span class="code">${G} − (${displayHits} × ${dph})</span>
           <div class="result">Result: ${gilRem}</div>
         </div>
-      `;
-
-      finalDiv.innerHTML = `
-        <div>Total Damage: ${totalDamage.toLocaleString()}</div>
-        <div>Hits: ${displayHits}</div>
-        <div>Damage Per Hit: ${dph.toLocaleString()}</div>
-        <div>Gil Consumed: ${totalDamage.toLocaleString()}</div>
-        <div>Gil Remaining: ${gilRem.toLocaleString()}</div>
       `;
     });
 
