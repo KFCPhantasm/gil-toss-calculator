@@ -75,6 +75,25 @@
       justify-content: space-between;
     }
     .results span { color: #ffcb6b; }
+
+    /* Gil Toss button styling */
+    #tossButton {
+      display: block;
+      margin: 1em auto 0;
+      padding: 0.6em 1.2em;
+      background: #50fa7b;
+      border: none;
+      border-radius: 4px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1em;
+    }
+    #tossButton:disabled {
+      background: #44475a;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
     .breakdown-title {
       font-size: 1.5em;
       margin-bottom: 1em;
@@ -175,14 +194,13 @@
         <label>Materia Level: <span id="matLabel">1</span></label>
         <input type="range" id="matLevel" min="1" max="5" value="1"/>
         <label>Current Gil: <span id="gilLabel">1,000</span></label>
-        <input type="range" id="gilSlider" min="1" max="999999999" step="1000"/>
-        <input type="number" id="gilInput" min="1" max="999999999" step="1" value="1000"/>
+        <input type="range" id="gilSlider" min="0" max="999999999" step="1000"/>
+        <input type="number" id="gilInput" min="0" max="999999999" step="1" value="1000"/>
 
         <h3>Damage Modifiers</h3>
         <div class="toggle-group">
           <label class="toggle-wrapper">
             <input type="checkbox" id="commandToggle"/>
-            <span class="toggle-slider"></span>
             <span class="toggle-label">Attack → Command</span>
           </label>
         </div>
@@ -197,7 +215,6 @@
         <div class="toggle-group">
           <label class="toggle-wrapper">
             <input type="checkbox" id="critToggle"/>
-            <span class="toggle-slider"></span>
             <span class="toggle-label">Critical Hits (DPH ×2)</span>
           </label>
         </div>
@@ -205,7 +222,6 @@
         <div class="toggle-group">
           <label class="toggle-wrapper">
             <input type="checkbox" id="stanceToggle"/>
-            <span class="toggle-slider"></span>
             <span class="toggle-label">Battle Stance</span>
           </label>
         </div>
@@ -221,21 +237,23 @@
         <div class="toggle-group">
           <label class="toggle-wrapper">
             <input type="checkbox" id="capNormal"/>
-            <span class="toggle-slider"></span>
             <span class="toggle-label">Normal Damage Cap (9999)</span>
           </label>
         </div>
         <div class="toggle-group">
           <label class="toggle-wrapper">
             <input type="checkbox" id="capBreak"/>
-            <span class="toggle-slider"></span>
             <span class="toggle-label">Break Damage Limit (99999)</span>
           </label>
         </div>
 
         <div class="results" id="finalResults">
           <div class="results-title">Final Results</div>
+          <!-- Final results will be injected here -->
         </div>
+
+        <!-- Gil Toss button OUTSIDE the results box -->
+        <button id="tossButton">Gil Toss</button>
       </aside>
       <section class="panel breakdown">
         <div class="breakdown-title">Calculation Breakdown</div>
@@ -245,75 +263,66 @@
   </div>
 
   <script>
-    const lvlSlider             = document.getElementById('zackLevel');
-    const matSlider             = document.getElementById('matLevel');
-    const gilSlider             = document.getElementById('gilSlider');
-    const gilInput              = document.getElementById('gilInput');
-    const critToggle            = document.getElementById('critToggle');
-    const commandToggle         = document.getElementById('commandToggle');
-    const stanceToggle          = document.getElementById('stanceToggle');
+    const lvlSlider      = document.getElementById('zackLevel');
+    const matSlider      = document.getElementById('matLevel');
+    const gilSlider      = document.getElementById('gilSlider');
+    const gilInput       = document.getElementById('gilInput');
+    const gilLabel       = document.getElementById('gilLabel');
+    const critToggle     = document.getElementById('critToggle');
+    const commandToggle  = document.getElementById('commandToggle');
+    const stanceToggle   = document.getElementById('stanceToggle');
     const commandSliderContainer = document.getElementById('commandSliderContainer');
-    const commandSlider         = document.getElementById('commandSlider');
-    const commandLabel          = document.getElementById('commandLabel');
-    const commandMult           = document.getElementById('commandMult');
+    const commandSlider  = document.getElementById('commandSlider');
+    const commandLabel   = document.getElementById('commandLabel');
+    const commandMult    = document.getElementById('commandMult');
     const stanceSliderContainer = document.getElementById('stanceSliderContainer');
-    const stanceSlider          = document.getElementById('stanceSlider');
-    const stanceLabel           = document.getElementById('stanceLabel');
-    const stanceMult            = document.getElementById('stanceMult');
-    const capNormal             = document.getElementById('capNormal');
-    const capBreak              = document.getElementById('capBreak');
-    const lvlLabel              = document.getElementById('lvlLabel');
-    const matLabel              = document.getElementById('matLabel');
-    const gilLabel              = document.getElementById('gilLabel');
-    const finalDiv              = document.getElementById('finalResults');
-    const stepsDiv              = document.getElementById('steps');
-
-    function snapGil(g) {
-      if (g < 100_000)      return g;
-      if (g < 1_000_000)    return Math.round(g / 10_000) * 10_000;
-      if (g < 10_000_000)   return Math.round(g / 100_000) * 100_000;
-      if (g < 100_000_000)  return Math.round(g / 1_000_000) * 1_000_000;
-      return Math.round(g / 10_000_000) * 10_000_000;
-    }
+    const stanceSlider   = document.getElementById('stanceSlider');
+    const stanceLabel    = document.getElementById('stanceLabel');
+    const stanceMult     = document.getElementById('stanceMult');
+    const capNormal      = document.getElementById('capNormal');
+    const capBreak       = document.getElementById('capBreak');
+    const lvlLabel       = document.getElementById('lvlLabel');
+    const matLabel       = document.getElementById('matLabel');
+    const finalDiv       = document.getElementById('finalResults');
+    const stepsDiv       = document.getElementById('steps');
+    const tossButton     = document.getElementById('tossButton');
 
     function updateUI() {
-      const Z            = +lvlSlider.value;
-      const M            = +matSlider.value;
-      const isCrit       = critToggle.checked;
-      const isCommand    = commandToggle.checked;
-      const isStance     = stanceToggle.checked;
-      const cap9999      = capNormal.checked;
-      const cap99999     = capBreak.checked;
+      const Z = +lvlSlider.value, M = +matSlider.value;
+      const isCrit    = critToggle.checked;
+      const isCmd     = commandToggle.checked;
+      const isStn     = stanceToggle.checked;
+      const cap9999   = capNormal.checked;
+      const cap99999  = capBreak.checked;
 
-      // sync modifier sliders
-      commandSliderContainer.style.display = isCommand ? 'block' : 'none';
-      stanceSliderContainer.style.display  = isStance  ? 'block' : 'none';
+      // show/hide modifier sliders
+      commandSliderContainer.style.display = isCmd   ? 'block' : 'none';
+      stanceSliderContainer.style.display  = isStn  ? 'block' : 'none';
 
-      // read slider values
-      const numAttacks        = isCommand ? +commandSlider.value : 2;
-      const commandMultiplier = numAttacks === 2 ? 1.2 : numAttacks === 3 ? 1.5 : 1.8;
-      const stancePercent     = isStance  ? +stanceSlider.value : 0;
+      // read modifiers
+      const numAttacks = isCmd ? +commandSlider.value : 2;
+      const cmdMult    = numAttacks === 2 ? 1.2 : numAttacks === 3 ? 1.5 : 1.8;
+      const stnPct     = isStn ? +stanceSlider.value : 0;
 
-      // sanitize Gil
-      let G = parseInt(gilInput.value.replace(/\D/g,''), 10);
-      if (isNaN(G) || G < 1) G = 1;
-      if (G > 999999999)    G = 999999999;
+      // sanitize Gil from input
+      let G = parseInt(gilInput.value.replace(/\D/g,''), 10) || 0;
+      if (G < 0) G = 0;
+      if (G > 999999999) G = 999999999;
 
-      // sync Gil controls
+      // sync controls & label
       gilInput.value = G;
       gilSlider.value = G;
       gilLabel.textContent = G.toLocaleString();
 
       // update labels
-      lvlLabel.textContent    = Z;
-      matLabel.textContent    = M;
+      lvlLabel.textContent     = Z;
+      matLabel.textContent     = M;
       commandLabel.textContent = numAttacks;
-      commandMult.textContent  = `(DPH ×${commandMultiplier})`;
-      stanceLabel.textContent  = `${stancePercent}%`;
-      stanceMult.textContent   = stancePercent === 25 ? '(DPH ×3)' : '(DPH ×2)';
+      commandMult.textContent  = `(DPH ×${cmdMult})`;
+      stanceLabel.textContent  = `${stnPct}%`;
+      stanceMult.textContent   = stnPct === 25 ? '(DPH ×3)' : '(DPH ×2)';
 
-      // ensure mutual‑exclusion of caps
-      // (the oninput handlers already enforce it, this is a safety net)
+      // mutually exclusive caps
       if (cap9999 && cap99999) capBreak.checked = false;
 
       // core math
@@ -325,15 +334,17 @@
                           : 10*Z - 160;
       const base      = M*150 + Z*30 + gilFloat + gilOff;
       const normalDPH = Math.floor(2*base + 20);
-      const rawHits   = Math.ceil(G / normalDPH);
+      const rawHits   = G > 0 ? Math.ceil(G / normalDPH) : 0;
       const clamped   = Math.min(rawHits, 5);
       const gilRem    = Math.max(G - clamped*normalDPH, 0);
 
-      let dph       = normalDPH;
-      let breakdown = '';
+      // disable toss if no Gil
+      tossButton.disabled = (G <= 0);
 
+      // build breakdown steps
+      let dph = normalDPH, breakdownHTML = '';
       if (isCrit) {
-        breakdown += `
+        breakdownHTML += `
           <div class="step">
             <h3>CRITICAL HIT (×2)</h3>
             <span class="code">${dph} × 2</span>
@@ -341,18 +352,18 @@
           </div>`;
         dph *= 2;
       }
-      if (isCommand) {
-        breakdown += `
+      if (isCmd) {
+        breakdownHTML += `
           <div class="step">
             <h3>ATTACK → COMMAND</h3>
-            <span class="code">${dph} × ${commandMultiplier}</span>
-            <div class="result">Result: ${Math.floor(dph*commandMultiplier)}</div>
+            <span class="code">${dph} × ${cmdMult}</span>
+            <div class="result">Result: ${Math.floor(dph*cmdMult)}</div>
           </div>`;
-        dph = Math.floor(dph*commandMultiplier);
+        dph = Math.floor(dph*cmdMult);
       }
-      if (isStance) {
-        const sm = stancePercent === 25 ? 3 : 2;
-        breakdown += `
+      if (isStn) {
+        const sm = stnPct === 25 ? 3 : 2;
+        breakdownHTML += `
           <div class="step">
             <h3>BATTLE STANCE</h3>
             <span class="code">${dph} × ${sm}</span>
@@ -361,7 +372,7 @@
         dph *= sm;
       }
       if (cap9999 && dph > 9999) {
-        breakdown += `
+        breakdownHTML += `
           <div class="step">
             <h3>DAMAGE CAP: NORMAL (9999)</h3>
             <span class="code">min(${dph}, 9999)</span>
@@ -370,7 +381,7 @@
         dph = 9999;
       }
       if (cap99999 && dph > 99999) {
-        breakdown += `
+        breakdownHTML += `
           <div class="step">
             <h3>DAMAGE CAP: BREAK (99999)</h3>
             <span class="code">min(${dph}, 99999)</span>
@@ -379,113 +390,102 @@
         dph = 99999;
       }
 
-      const totalDamage = clamped * dph;
-
+      // render final results
       finalDiv.innerHTML = `
         <div class="results-title">Final Results</div>
-        <div>Total Damage: <span>${totalDamage.toLocaleString()}</span></div>
+        <div>Total Damage: <span>${(clamped*dph).toLocaleString()}</span></div>
         <div>Hits: <span>${clamped}</span></div>
         <div>Damage Per Hit: <span>${dph.toLocaleString()}</span></div>
         <div>Gil Consumed: <span>${(clamped*normalDPH).toLocaleString()}</span></div>
-        <div>Gil Remaining: <span>${gilRem.toLocaleString()}</span></div>`;
-
+        <div>Gil Remaining: <span>${gilRem.toLocaleString()}</span></div>
+      `;
       stepsDiv.innerHTML = `
         <div class="step">
           <h3>STEP 1: GIL_FLOAT</h3>
-          <span class="code">${G} ÷ 1000.0</span>
-          <div class="result">Result: ${gilFloat.toFixed(3)}</div>
+          <span class="code">${G} ÷ 1000</span>
+          <div class="result">${gilFloat.toFixed(3)}</div>
         </div>
         <div class="step">
           <h3>STEP 2: GIL_OFFSET</h3>
           <span class="code">${Z === 99
-                               ? `980 − (50 × ${M})`
+                               ? `980 − (50 × ${M})`
                                : M < 3
-                                 ? `(10 × ${Z}) − 60`
-                                 : `(10 × ${Z}) − 160`}</span>
-          <div class="result">Result: ${gilOff}</div>
+                                 ? `(10 × ${Z}) − 60`
+                                 : `(10 × ${Z}) − 160`}</span>
+          <div class="result">${gilOff}</div>
         </div>
         <div class="step">
           <h3>STEP 3: BASE</h3>
-          <span class="code">${M} × 150 + ${Z} × 30 + ${gilFloat.toFixed(3)} + ${gilOff}</span>
-          <div class="result">Result: ${base.toFixed(3)}</div>
+          <span class="code">${M} × 150 + ${Z} × 30 + ${gilFloat.toFixed(3)} + ${gilOff}</span>
+          <div class="result">${base.toFixed(3)}</div>
         </div>
         <div class="step">
-          <h3>STEP 4: DAMAGE PER HIT (DPH)</h3>
-          <span class="code">floor(2 × ${base.toFixed(3)} + 20)</span>
-          <div class="result">Result: ${normalDPH}</div>
+          <h3>STEP 4: DAMAGE PER HIT</h3>
+          <span class="code">floor(2 × ${base.toFixed(3)} + 20)</span>
+          <div class="result">${normalDPH}</div>
         </div>
-        ${breakdown}
+        ${breakdownHTML}
         <div class="step">
           <h3>STEP 5: HITS</h3>
-          <span class="code">ceil(${G} ÷ ${normalDPH}) → ${rawHits}, clamped to 5</span>
-          <div class="result">Hits: ${clamped}</div>
+          <span class="code">ceil(${G} ÷ ${normalDPH}) → ${rawHits}, clamped to 5</span>
+          <div class="result">${clamped}</div>
         </div>
         <div class="step">
           <h3>STEP 6: GIL_REMAINING</h3>
-          <span class="code">${G} − (${clamped} × ${normalDPH})</span>
-          <div class="result">Result: ${gilRem}</div>
-        </div>`;
+          <span class="code">${G} − (${clamped} × ${normalDPH})</span>
+          <div class="result">${gilRem}</div>
+        </div>
+      `;
     }
 
-    // wire up inputs
-    lvlSlider.oninput  = updateUI;
-    matSlider.oninput  = updateUI;
+    function performGilToss() {
+      let G = parseInt(gilInput.value.replace(/\D/g,''),10) || 0;
+      const Z = +lvlSlider.value, M = +matSlider.value;
+      const gilFloat = G / 1000;
+      const gilOff   = Z === 99
+                       ? 980 - 50*M
+                       : M < 3
+                         ? 10*Z - 60
+                         : 10*Z - 160;
+      const base     = M*150 + Z*30 + gilFloat + gilOff;
+      const normalDPH= Math.floor(2*base + 20);
+      const rawHits  = G > 0 ? Math.ceil(G / normalDPH) : 0;
+      const clamped  = Math.min(rawHits, 5);
+      const gilRem   = Math.max(G - clamped*normalDPH, 0);
 
-    gilSlider.oninput = () => {
-      const s = snapGil(+gilSlider.value);
-      gilInput.value  = s;
-      gilSlider.value = s;
+      gilInput.value = gilRem;
       updateUI();
-    };
-    gilInput.oninput = () => {
-      let v = parseInt(gilInput.value.replace(/\D/g,''),10);
-      if (isNaN(v)||v<1) v = 1;
-      if (v>999999999)  v = 999999999;
-      gilInput.value  = v;
+    }
+
+    // wiring events
+    lvlSlider.addEventListener('input', updateUI);
+    matSlider.addEventListener('input', updateUI);
+    gilSlider.addEventListener('input', () => {
+      gilInput.value = gilSlider.value;
+      updateUI();
+    });
+    gilInput.addEventListener('input', () => {
+      let v = parseInt(gilInput.value.replace(/\D/g,''),10) || 0;
+      if (v < 0) v = 0;
+      if (v > 999999999) v = 999999999;
+      gilInput.value = v;
       gilSlider.value = v;
       updateUI();
-    };
-
-    critToggle.oninput = updateUI;
-
-    commandToggle.oninput = () => {
-      if (commandToggle.checked) {
-        // auto‑disable stance
-        stanceToggle.checked = false;
-        stanceSliderContainer.style.display = 'none';
-      }
-      commandSliderContainer.style.display = commandToggle.checked ? 'block' : 'none';
+    });
+    critToggle.addEventListener('input', updateUI);
+    commandToggle.addEventListener('input', () => {
+      if (commandToggle.checked) stanceToggle.checked = false;
       updateUI();
-    };
-
-    stanceToggle.oninput = () => {
-      if (stanceToggle.checked) {
-        // auto‑disable command
-        commandToggle.checked = false;
-        commandSliderContainer.style.display = 'none';
-      }
-      stanceSliderContainer.style.display = stanceToggle.checked ? 'block' : 'none';
+    });
+    stanceToggle.addEventListener('input', () => {
+      if (stanceToggle.checked) commandToggle.checked = false;
       updateUI();
-    };
-
-    capNormal.oninput = () => {
-      if (capNormal.checked) {
-        // auto‑disable break cap
-        capBreak.checked = false;
-      }
-      updateUI();
-    };
-
-    capBreak.oninput = () => {
-      if (capBreak.checked) {
-        // auto‑disable normal cap
-        capNormal.checked = false;
-      }
-      updateUI();
-    };
-
-    commandSlider.oninput = updateUI;
-    stanceSlider.oninput  = updateUI;
+    });
+    capNormal.addEventListener('input', updateUI);
+    capBreak.addEventListener('input', updateUI);
+    commandSlider.addEventListener('input', updateUI);
+    stanceSlider.addEventListener('input', updateUI);
+    tossButton.addEventListener('click', performGilToss);
 
     // initial render
     updateUI();
