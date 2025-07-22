@@ -62,7 +62,6 @@
       border-radius: 4px;
       color: #f8f8f2;
     }
-
     .results {
       background: #1c1d2a;
       border: 1px solid #444;
@@ -86,26 +85,17 @@
     .results span {
       color: #ffcb6b;
     }
-    .breakdown {
-      padding-top: 0;
-    }
     .breakdown-title {
       font-size: 1.5em;
       margin-bottom: 1em;
       border-bottom: 2px solid #ffcb6b;
       padding-bottom: .3em;
-      color: #ffcb6b;
     }
-    .breakdown .step {
+    .step {
       background: #21222c;
       padding: 1em;
       border-radius: 6px;
       margin-bottom: 1em;
-    }
-    .step h3 {
-      font-size: 1.1em;
-      margin-bottom: .5em;
-      color: #ffcb6b;
     }
     .step .code {
       background: #282a36;
@@ -120,8 +110,6 @@
       margin-top: .3em;
       color: #8be9fd;
     }
-
-    /* Toggle styling */
     .toggle-group {
       margin-top: 2em;
     }
@@ -164,12 +152,11 @@
       font-weight: bold;
       font-size: 0.95em;
     }
-
-    #stanceSliderContainer {
+    #stanceSliderContainer, #commandSliderContainer {
       display: none;
       margin-top: 1em;
     }
-    #stanceSliderLabel {
+    #stanceSliderLabel, #commandSliderLabel {
       font-weight: bold;
       margin-top: 1em;
       display: block;
@@ -187,24 +174,30 @@
       <aside class="panel sidebar">
         <h3>Parameters</h3>
         <label>Zack’s Level: <span id="lvlLabel">50</span></label>
-        <input type="range" id="zackLevel" min="6" max="99" value="6"/>
+        <input type="range" id="zackLevel" min="6" max="99" value="50"/>
 
         <label>Materia Level: <span id="matLabel">1</span></label>
         <input type="range" id="matLevel" min="1" max="5" value="1"/>
 
         <label>Current Gil: <span id="gilLabel">1,000</span></label>
-        <input type="range" id="gilSlider" min="1" max="999999999" step="1000" list="gilTicks" />
-        <datalist id="gilTicks">
-          <option value="1000" label="1K"></option>
-          <option value="1000000" label="1M"></option>
-          <option value="100000000" label="100M"></option>
-          <option value="999999999" label="999M"></option>
-        </datalist>
+        <input type="range" id="gilSlider" min="1" max="999999999" step="1000" />
         <input type="number" id="gilInput" min="1" max="999999999" step="1" value="1000"/>
 
         <h3>Damage Modifiers</h3>
 
-        <!-- Critical Hits -->
+        <div class="toggle-group">
+          <label class="toggle-wrapper">
+            <input type="checkbox" id="commandToggle" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Attack → Command</span>
+          </label>
+        </div>
+
+        <div id="commandSliderContainer">
+          <label id="commandSliderLabel">Number of Attacks: <span id="commandLabel">2</span> <span id="commandMult">(DPH ×1.2)</span></label>
+          <input type="range" id="commandSlider" min="2" max="4" step="1" value="2" />
+        </div>
+
         <div class="toggle-group">
           <label class="toggle-wrapper">
             <input type="checkbox" id="critToggle" />
@@ -213,7 +206,6 @@
           </label>
         </div>
 
-        <!-- Battle Stance -->
         <div class="toggle-group">
           <label class="toggle-wrapper">
             <input type="checkbox" id="stanceToggle" />
@@ -222,15 +214,12 @@
           </label>
         </div>
 
-        <!-- Command Proficiency Slider -->
         <div id="stanceSliderContainer">
           <label id="stanceSliderLabel">Command Proficiency: <span id="stanceLabel">0%</span> <span id="stanceMult">(DPH ×2)</span></label>
           <input type="range" id="stanceSlider" min="0" max="25" step="25" value="0" />
         </div>
 
-        <div class="results" id="finalResults">
-          <div class="results-title">Final Results</div>
-        </div>
+        <div class="results" id="finalResults"></div>
       </aside>
       <section class="panel breakdown">
         <div class="breakdown-title">Calculation Breakdown</div>
@@ -240,146 +229,146 @@
   </div>
 
   <script>
-    const lvlSlider = document.getElementById('zackLevel');
-    const matSlider = document.getElementById('matLevel');
-    const gilSlider = document.getElementById('gilSlider');
-    const gilInput = document.getElementById('gilInput');
-    const critToggle = document.getElementById('critToggle');
-    const stanceToggle = document.getElementById('stanceToggle');
-    const stanceSlider = document.getElementById('stanceSlider');
-    const stanceLabel = document.getElementById('stanceLabel');
-    const stanceSliderContainer = document.getElementById('stanceSliderContainer');
-    const lvlLabel = document.getElementById('lvlLabel');
-    const matLabel = document.getElementById('matLabel');
-    const gilLabel = document.getElementById('gilLabel');
-    const finalDiv = document.getElementById('finalResults');
-    const stepsDiv = document.getElementById('steps');
+const lvlSlider = document.getElementById('zackLevel');
+const matSlider = document.getElementById('matLevel');
+const gilSlider = document.getElementById('gilSlider');
+const gilInput = document.getElementById('gilInput');
+const critToggle = document.getElementById('critToggle');
+const stanceToggle = document.getElementById('stanceToggle');
+const stanceSlider = document.getElementById('stanceSlider');
+const stanceLabel = document.getElementById('stanceLabel');
+const stanceSliderContainer = document.getElementById('stanceSliderContainer');
+const lvlLabel = document.getElementById('lvlLabel');
+const matLabel = document.getElementById('matLabel');
+const gilLabel = document.getElementById('gilLabel');
+const finalDiv = document.getElementById('finalResults');
+const stepsDiv = document.getElementById('steps');
+const commandToggle = document.getElementById('commandToggle');
+const commandSlider = document.getElementById('commandSlider');
+const commandLabel = document.getElementById('commandLabel');
+const commandSliderContainer = document.getElementById('commandSliderContainer');
+const commandMult = document.getElementById('commandMult');
 
-    function snapGil(gil) {
-      if (gil < 100000) return gil;
-      if (gil < 1000000) return Math.round(gil / 10000) * 10000;
-      if (gil < 10000000) return Math.round(gil / 100000) * 100000;
-      if (gil < 100000000) return Math.round(gil / 1000000) * 1000000;
-      return Math.round(gil / 10000000) * 10000000;
-    }
+function snapGil(gil) {
+  if (gil < 100000) return gil;
+  if (gil < 1000000) return Math.round(gil / 10000) * 10000;
+  if (gil < 10000000) return Math.round(gil / 100000) * 100000;
+  if (gil < 100000000) return Math.round(gil / 1000000) * 1000000;
+  return Math.round(gil / 10000000) * 10000000;
+}
 
-    function updateUI() {
-      const Z = +lvlSlider.value;
-      const M = +matSlider.value;
-      const isCrit = critToggle.checked;
-      const isStance = stanceToggle.checked;
-      const stancePercent = isStance ? +stanceSlider.value : 0;
+function updateUI() {
+  const Z = +lvlSlider.value;
+  const M = +matSlider.value;
+  const isCrit = critToggle.checked;
+  const isStance = stanceToggle.checked;
+  const stancePercent = isStance ? +stanceSlider.value : 0;
+  const isCommand = commandToggle.checked;
+  const numAttacks = isCommand ? +commandSlider.value : 2;
+  const commandMultiplier = numAttacks === 2 ? 1.2 : numAttacks === 3 ? 1.5 : 1.8;
 
-      let G = parseInt(gilInput.value.replace(/\D/g, ''), 10);
-      if (isNaN(G) || G < 1) G = 1;
-      if (G > 999999999) G = 999999999;
+  commandLabel.textContent = numAttacks;
+  commandMult.textContent = `(DPH ×${commandMultiplier})`;
 
-      gilInput.value = G;
-      gilSlider.value = G;
-      gilLabel.textContent = G.toLocaleString();
-      stanceLabel.textContent = stancePercent + "%";
-      document.getElementById('stanceMult').textContent = stancePercent === 25 ? "(DPH ×3)" : "(DPH ×2)";
+  let G = parseInt(gilInput.value.replace(/\D/g, ''), 10);
+  if (isNaN(G) || G < 1) G = 1;
+  if (G > 999999999) G = 999999999;
 
+  gilInput.value = G;
+  gilSlider.value = G;
+  gilLabel.textContent = G.toLocaleString();
+  stanceLabel.textContent = stancePercent + '%';
+  document.getElementById('stanceMult').textContent = stancePercent === 25 ? '(DPH ×3)' : '(DPH ×2)';
 
-      const gilFloat = G / 1000;
-      const gilOff = Z === 99 ? 980 - 50 * M : M < 3 ? 10 * Z - 60 : 10 * Z - 160;
-      const base = M * 150 + Z * 30 + gilFloat + gilOff;
-      const normalDPH = Math.floor(2 * base + 20);
-      const rawHits = Math.ceil(G / normalDPH);
-      const clamped = Math.min(rawHits, 5);
-      const gilRem = Math.max(G - clamped * normalDPH, 0);
+  const gilFloat = G / 1000;
+  const gilOff = Z === 99 ? 980 - 50 * M : M < 3 ? 10 * Z - 60 : 10 * Z - 160;
+  const base = M * 150 + Z * 30 + gilFloat + gilOff;
+  const normalDPH = Math.floor(2 * base + 20);
+  const rawHits = Math.ceil(G / normalDPH);
+  const clamped = Math.min(rawHits, 5);
+  const gilRem = Math.max(G - clamped * normalDPH, 0);
 
-      let dph = normalDPH;
-      if (isCrit) dph *= 2;
-      if (isStance) dph *= stancePercent === 25 ? 3 : 2;
+  let dph = normalDPH;
+  if (isCrit) dph *= 2;
+  if (isStance) dph *= stancePercent === 25 ? 3 : 2;
+  if (isCommand) dph = Math.floor(dph * commandMultiplier);
 
-      const totalDamage = clamped * dph;
+  const totalDamage = clamped * dph;
 
-      lvlLabel.textContent = Z;
-      matLabel.textContent = M;
+  lvlLabel.textContent = Z;
+  matLabel.textContent = M;
 
-      finalDiv.innerHTML = `
-        <div class="results-title">Final Results</div>
-        <div>Total Damage: <span>${totalDamage.toLocaleString()}</span></div>
-        <div>Hits: <span>${clamped}</span></div>
-        <div>Damage Per Hit: <span>${dph.toLocaleString()}</span></div>
-        <div>Gil Consumed: <span>${(clamped * normalDPH).toLocaleString()}</span></div>
-        <div>Gil Remaining: <span>${gilRem.toLocaleString()}</span></div>
-      `;
+  finalDiv.innerHTML = `
+    <div class="results-title">Final Results</div>
+    <div>Total Damage: <span>${totalDamage.toLocaleString()}</span></div>
+    <div>Hits: <span>${clamped}</span></div>
+    <div>Damage Per Hit: <span>${dph.toLocaleString()}</span></div>
+    <div>Gil Consumed: <span>${(clamped * normalDPH).toLocaleString()}</span></div>
+    <div>Gil Remaining: <span>${gilRem.toLocaleString()}</span></div>
+  `;
 
-      stepsDiv.innerHTML = `
-        <div class="step">
-          <h3>STEP 1: GIL_FLOAT</h3>
-          <span class="code">GIL_FLOAT = ${G} ÷ 1000.0</span>
-          <div class="result">Result: ${gilFloat.toFixed(3)}</div>
-        </div>
-        <div class="step">
-          <h3>STEP 2: GIL_OFFSET</h3>
-          <span class="code">${Z === 99 ? `980 − (50 × ${M})` : M < 3 ? `(10 × ${Z}) − 60` : `(10 × ${Z}) − 160`}</span>
-          <div class="result">Result: ${gilOff}</div>
-        </div>
-        <div class="step">
-          <h3>STEP 3: BASE</h3>
-          <span class="code">${M} × 150 + ${Z} × 30 + ${gilFloat.toFixed(3)} + ${gilOff}</span>
-          <div class="result">Result: ${base.toFixed(3)}</div>
-        </div>
-        <div class="step">
-          <h3>STEP 4: DAMAGE PER HIT (DPH)</h3>
-          <span class="code">floor(2 × ${base.toFixed(3)} + 20)</span>
-          <div class="result">Result: ${normalDPH}</div>
-        </div>
-        ${isCrit ? `
-        <div class="step">
-          <h3>CRITICAL HIT MODIFIER</h3>
-          <span class="code">${normalDPH} × 2</span>
-          <div class="result">Result: ${normalDPH * 2}</div>
-        </div>` : ``}
-        ${isStance ? `
-        <div class="step">
-          <h3>BATTLE STANCE MODIFIER</h3>
-          <span class="code">DPH × ${stancePercent === 25 ? 3 : 2}</span>
-          <div class="result">Result: ${dph}</div>
-        </div>` : ``}
-        <div class="step">
-          <h3>STEP 5: RAW_HITS & CLAMP</h3>
-          <span class="code">ceil(${G} ÷ ${normalDPH}) → ${rawHits}<br/>clamped to max 5</span>
-          <div class="result">Hits before clamp: ${rawHits}, after clamp: ${clamped}</div>
-        </div>
-        <div class="step">
-          <h3>STEP 6: GIL_REMAINING</h3>
-          <span class="code">${G} − (${clamped} × ${normalDPH})</span>
-          <div class="result">Result: ${gilRem}</div>
-        </div>
-      `;
-    }
+  stepsDiv.innerHTML = `
+    <div class="step"><h3>STEP 1: GIL_FLOAT</h3><span class="code">GIL_FLOAT = ${G} ÷ 1000.0</span><div class="result">Result: ${gilFloat.toFixed(3)}</div></div>
+    <div class="step"><h3>STEP 2: GIL_OFFSET</h3><span class="code">${Z === 99 ? `980 − (50 × ${M})` : M < 3 ? `(10 × ${Z}) − 60` : `(10 × ${Z}) − 160`}</span><div class="result">Result: ${gilOff}</div></div>
+    <div class="step"><h3>STEP 3: BASE</h3><span class="code">${M} × 150 + ${Z} × 30 + ${gilFloat.toFixed(3)} + ${gilOff}</span><div class="result">Result: ${base.toFixed(3)}</div></div>
+    <div class="step"><h3>STEP 4: DAMAGE PER HIT (DPH)</h3><span class="code">floor(2 × ${base.toFixed(3)} + 20)</span><div class="result">Result: ${normalDPH}</div></div>
+    ${isCrit ? `<div class="step"><h3>CRITICAL HIT MODIFIER</h3><span class="code">${normalDPH} × 2</span><div class="result">Result: ${normalDPH * 2}</div></div>` : ``}
+    ${isCommand ? `<div class="step"><h3>ATTACK → COMMAND MODIFIER</h3><span class="code">${isCrit ? normalDPH * 2 : normalDPH} × ${commandMultiplier}</span><div class="result">Result: ${dph}</div></div>` : ``}
+    ${isStance ? `<div class="step"><h3>BATTLE STANCE MODIFIER</h3><span class="code">${isCrit ? normalDPH * 2 : normalDPH} × ${stancePercent === 25 ? 3 : 2}</span><div class="result">Result: ${dph}</div></div>` : ``}
+    <div class="step"><h3>STEP 5: RAW_HITS & CLAMP</h3><span class="code">ceil(${G} ÷ ${normalDPH}) → ${rawHits}<br/>clamped to max 5</span><div class="result">Hits before clamp: ${rawHits}, after clamp: ${clamped}</div></div>
+    <div class="step"><h3>STEP 6: GIL_REMAINING</h3><span class="code">${G} − (${clamped} × ${normalDPH})</span><div class="result">Result: ${gilRem}</div></div>
+  `;
+}
 
-    lvlSlider.oninput = updateUI;
-    matSlider.oninput = updateUI;
-    critToggle.oninput = updateUI;
-    stanceToggle.oninput = () => {
-      stanceSliderContainer.style.display = stanceToggle.checked ? 'block' : 'none';
-      updateUI();
-    };
-    stanceSlider.oninput = updateUI;
+lvlSlider.oninput = updateUI;
+matSlider.oninput = updateUI;
+critToggle.oninput = updateUI;
 
-    gilSlider.oninput = () => {
-      const snapped = snapGil(+gilSlider.value);
-      gilInput.value = snapped;
-      gilSlider.value = snapped;
-      updateUI();
-    };
+stanceToggle.oninput = () => {
+  if (stanceToggle.checked) {
+    commandToggle.checked = false;
+    stanceSliderContainer.style.display = 'block';
+    commandSliderContainer.style.display = 'none';
+  } else {
+    stanceSliderContainer.style.display = 'none';
+  }
+  updateUI();
+};
 
-    gilInput.oninput = () => {
-      let raw = parseInt(gilInput.value.replace(/\D/g, ''), 10);
-      if (isNaN(raw)) raw = 1;
-      if (raw < 1) raw = 1;
-      if (raw > 999999999) raw = 999999999;
-      gilInput.value = raw;
-      gilSlider.value = raw;
-      updateUI();
-    };
+stanceSlider.oninput = updateUI;
 
-    updateUI();
-  </script>
+commandToggle.oninput = () => {
+  if (commandToggle.checked) {
+    stanceToggle.checked = false;
+    commandSliderContainer.style.display = 'block';
+    stanceSliderContainer.style.display = 'none';
+  } else {
+    commandSliderContainer.style.display = 'none';
+  }
+  updateUI();
+};
+
+commandSlider.oninput = updateUI;
+
+gilSlider.oninput = () => {
+  const snapped = snapGil(+gilSlider.value);
+  gilInput.value = snapped;
+  gilSlider.value = snapped;
+  updateUI();
+};
+
+gilInput.oninput = () => {
+  let raw = parseInt(gilInput.value.replace(/\D/g, ''), 10);
+  if (isNaN(raw)) raw = 1;
+  if (raw < 1) raw = 1;
+  if (raw > 999999999) raw = 999999999;
+  gilInput.value = raw;
+  gilSlider.value = raw;
+  updateUI();
+};
+
+updateUI();
+</script>
+
 </body>
 </html>
