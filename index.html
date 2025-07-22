@@ -322,9 +322,6 @@
       stanceLabel.textContent  = `${stnPct}%`;
       stanceMult.textContent   = stnPct === 25 ? '(DPH ×3)' : '(DPH ×2)';
 
-      // mutually exclusive caps
-      if (cap9999 && cap99999) capBreak.checked = false;
-
       // core math
       const gilFloat  = G / 1000;
       const gilOff    = Z === 99
