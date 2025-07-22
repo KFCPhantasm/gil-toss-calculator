@@ -62,9 +62,6 @@
       border-radius: 4px;
       color: #f8f8f2;
     }
-    datalist option {
-      color: #fff;
-    }
     .results {
       background: #1c1d2a;
       border: 1px solid #444;
@@ -122,6 +119,50 @@
       margin-top: .3em;
       color: #8be9fd;
     }
+
+    /* Toggle styling */
+    .toggle-group {
+      margin-top: 2em;
+    }
+    .toggle-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.75em;
+      cursor: pointer;
+      user-select: none;
+    }
+    .toggle-wrapper input[type="checkbox"] {
+      appearance: none;
+      width: 40px;
+      height: 20px;
+      background: #44475a;
+      border-radius: 10px;
+      position: relative;
+      outline: none;
+      transition: background 0.3s ease;
+    }
+    .toggle-wrapper input[type="checkbox"]::before {
+      content: '';
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #f8f8f2;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.3s ease;
+    }
+    .toggle-wrapper input[type="checkbox"]:checked {
+      background: #50fa7b;
+    }
+    .toggle-wrapper input[type="checkbox"]:checked::before {
+      transform: translateX(20px);
+    }
+    .toggle-label {
+      color: #f8f8f2;
+      font-weight: bold;
+      font-size: 0.95em;
+    }
   </style>
 </head>
 <body>
@@ -150,6 +191,15 @@
         </datalist>
         <input type="number" id="gilInput" min="1" max="999999999" step="1" value="1000"/>
 
+        <h3>Damage Modifiers</h3>
+        <div class="toggle-group">
+          <label class="toggle-wrapper">
+            <input type="checkbox" id="critToggle" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Critical Hits (×2 DPH)</span>
+          </label>
+        </div>
+
         <div class="results" id="finalResults">
           <div class="results-title">Final Results</div>
         </div>
@@ -166,6 +216,7 @@
     const matSlider = document.getElementById('matLevel');
     const gilSlider = document.getElementById('gilSlider');
     const gilInput = document.getElementById('gilInput');
+    const critToggle = document.getElementById('critToggle');
     const lvlLabel = document.getElementById('lvlLabel');
     const matLabel = document.getElementById('matLabel');
     const gilLabel = document.getElementById('gilLabel');
@@ -183,8 +234,8 @@
     function updateUI() {
       const Z = +lvlSlider.value;
       const M = +matSlider.value;
+      const isCrit = critToggle.checked;
       let G = parseInt(gilInput.value.replace(/\D/g, ''), 10);
-
       if (isNaN(G) || G < 1) G = 1;
       if (G > 999999999) G = 999999999;
 
@@ -195,11 +246,12 @@
       const gilFloat = G / 1000;
       let gilOff = Z === 99 ? 980 - 50 * M : M < 3 ? 10 * Z - 60 : 10 * Z - 160;
       const base = M * 150 + Z * 30 + gilFloat + gilOff;
-      const dph = Math.floor(2 * base + 20);
-      const rawHits = Math.ceil(G / dph);
+      const normalDPH = Math.floor(2 * base + 20);
+      const rawHits = Math.ceil(G / normalDPH);
       const clamped = Math.min(rawHits, 5);
-      const gilRem = Math.max(G - clamped * dph, 0);
-      const totalDamage = clamped * dph;
+      const gilRem = Math.max(G - clamped * normalDPH, 0);
+      const finalDPH = isCrit ? normalDPH * 2 : normalDPH;
+      const totalDamage = clamped * finalDPH;
 
       lvlLabel.textContent = Z;
       matLabel.textContent = M;
@@ -208,8 +260,8 @@
         <div class="results-title">Final Results</div>
         <div>Total Damage: <span>${totalDamage.toLocaleString()}</span></div>
         <div>Hits: <span>${clamped}</span></div>
-        <div>Damage Per Hit: <span>${dph.toLocaleString()}</span></div>
-        <div>Gil Consumed: <span>${(totalDamage).toLocaleString()}</span></div>
+        <div>Damage Per Hit: <span>${finalDPH.toLocaleString()}</span></div>
+        <div>Gil Consumed: <span>${(clamped * normalDPH).toLocaleString()}</span></div>
         <div>Gil Remaining: <span>${gilRem.toLocaleString()}</span></div>
       `;
 
@@ -232,16 +284,25 @@
         <div class="step">
           <h3>STEP 4: DAMAGE PER HIT (DPH)</h3>
           <span class="code">floor(2 × ${base.toFixed(3)} + 20)</span>
-          <div class="result">Result: ${dph}</div>
+          <div class="result">Result: ${normalDPH}</div>
         </div>
+        ${
+          isCrit
+            ? `<div class="step">
+                <h3>CRITICAL HIT MODIFIER</h3>
+                <span class="code">DPH × 2 = ${normalDPH} × 2</span>
+                <div class="result">Result: ${finalDPH}</div>
+              </div>`
+            : ''
+        }
         <div class="step">
           <h3>STEP 5: RAW_HITS & CLAMP</h3>
-          <span class="code">ceil(${G} ÷ ${dph}) → ${rawHits}<br/>clamped to max 5</span>
+          <span class="code">ceil(${G} ÷ ${normalDPH}) → ${rawHits}<br/>clamped to max 5</span>
           <div class="result">Hits before clamp: ${rawHits}, after clamp: ${clamped}</div>
         </div>
         <div class="step">
           <h3>STEP 6: GIL_REMAINING</h3>
-          <span class="code">${G} − (${clamped} × ${dph})</span>
+          <span class="code">${G} − (${clamped} × ${normalDPH})</span>
           <div class="result">Result: ${gilRem}</div>
         </div>
       `;
@@ -249,6 +310,7 @@
 
     lvlSlider.oninput = updateUI;
     matSlider.oninput = updateUI;
+    critToggle.oninput = updateUI;
 
     gilSlider.oninput = () => {
       const snapped = snapGil(+gilSlider.value);
