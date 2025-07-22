@@ -29,17 +29,9 @@
     .header h2 {
       color: #cccccc;
     }
-    a {
-      color: #8be9fd;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-    .main {
-      display: flex;
-      gap: 2em;
-    }
+    a { color: #8be9fd; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .main { display: flex; gap: 2em; }
     .panel {
       background: #282a36;
       padding: 1.5em;
@@ -73,7 +65,7 @@
     .results-title {
       font-size: 1.2em;
       color: #ffcb6b;
-      margin-bottom: 0.8em;
+      margin-bottom: .8em;
       text-align: center;
     }
     .results div {
@@ -82,9 +74,7 @@
       display: flex;
       justify-content: space-between;
     }
-    .results span {
-      color: #ffcb6b;
-    }
+    .results span { color: #ffcb6b; }
     .breakdown-title {
       font-size: 1.5em;
       margin-bottom: 1em;
@@ -255,45 +245,47 @@
   </div>
 
   <script>
-    const lvlSlider            = document.getElementById('zackLevel');
-    const matSlider            = document.getElementById('matLevel');
-    const gilSlider            = document.getElementById('gilSlider');
-    const gilInput             = document.getElementById('gilInput');
-    const critToggle           = document.getElementById('critToggle');
-    const commandToggle        = document.getElementById('commandToggle');
-    const stanceToggle         = document.getElementById('stanceToggle');
+    const lvlSlider             = document.getElementById('zackLevel');
+    const matSlider             = document.getElementById('matLevel');
+    const gilSlider             = document.getElementById('gilSlider');
+    const gilInput              = document.getElementById('gilInput');
+    const critToggle            = document.getElementById('critToggle');
+    const commandToggle         = document.getElementById('commandToggle');
+    const stanceToggle          = document.getElementById('stanceToggle');
     const commandSliderContainer = document.getElementById('commandSliderContainer');
-    const commandSlider        = document.getElementById('commandSlider');
-    const commandLabel         = document.getElementById('commandLabel');
-    const commandMult          = document.getElementById('commandMult');
+    const commandSlider         = document.getElementById('commandSlider');
+    const commandLabel          = document.getElementById('commandLabel');
+    const commandMult           = document.getElementById('commandMult');
     const stanceSliderContainer = document.getElementById('stanceSliderContainer');
-    const stanceSlider         = document.getElementById('stanceSlider');
-    const stanceLabel          = document.getElementById('stanceLabel');
-    const stanceMult           = document.getElementById('stanceMult');
-    const capNormal            = document.getElementById('capNormal');
-    const capBreak             = document.getElementById('capBreak');
-    const lvlLabel             = document.getElementById('lvlLabel');
-    const matLabel             = document.getElementById('matLabel');
-    const gilLabel             = document.getElementById('gilLabel');
-    const finalDiv             = document.getElementById('finalResults');
-    const stepsDiv             = document.getElementById('steps');
+    const stanceSlider          = document.getElementById('stanceSlider');
+    const stanceLabel           = document.getElementById('stanceLabel');
+    const stanceMult            = document.getElementById('stanceMult');
+    const capNormal             = document.getElementById('capNormal');
+    const capBreak              = document.getElementById('capBreak');
+    const lvlLabel              = document.getElementById('lvlLabel');
+    const matLabel              = document.getElementById('matLabel');
+    const gilLabel              = document.getElementById('gilLabel');
+    const finalDiv              = document.getElementById('finalResults');
+    const stepsDiv              = document.getElementById('steps');
 
     function snapGil(g) {
       if (g < 100_000)      return g;
-      if (g < 1_000_000)    return Math.round(g/10_000)*10_000;
-      if (g < 10_000_000)   return Math.round(g/100_000)*100_000;
-      if (g < 100_000_000)  return Math.round(g/1_000_000)*1_000_000;
-      return Math.round(g/10_000_000)*10_000_000;
+      if (g < 1_000_000)    return Math.round(g / 10_000) * 10_000;
+      if (g < 10_000_000)   return Math.round(g / 100_000) * 100_000;
+      if (g < 100_000_000)  return Math.round(g / 1_000_000) * 1_000_000;
+      return Math.round(g / 10_000_000) * 10_000_000;
     }
 
     function updateUI() {
-      const Z           = +lvlSlider.value;
-      const M           = +matSlider.value;
-      const isCrit      = critToggle.checked;
-      const isCommand   = commandToggle.checked;
-      const isStance    = stanceToggle.checked;
+      const Z            = +lvlSlider.value;
+      const M            = +matSlider.value;
+      const isCrit       = critToggle.checked;
+      const isCommand    = commandToggle.checked;
+      const isStance     = stanceToggle.checked;
+      const cap9999      = capNormal.checked;
+      const cap99999     = capBreak.checked;
 
-      // sync slider containers
+      // sync modifier sliders
       commandSliderContainer.style.display = isCommand ? 'block' : 'none';
       stanceSliderContainer.style.display  = isStance  ? 'block' : 'none';
 
@@ -301,40 +293,44 @@
       const numAttacks        = isCommand ? +commandSlider.value : 2;
       const commandMultiplier = numAttacks === 2 ? 1.2 : numAttacks === 3 ? 1.5 : 1.8;
       const stancePercent     = isStance  ? +stanceSlider.value : 0;
-      const cap9999           = capNormal.checked;
-      const cap99999          = capBreak.checked;
 
       // sanitize Gil
       let G = parseInt(gilInput.value.replace(/\D/g,''), 10);
       if (isNaN(G) || G < 1) G = 1;
       if (G > 999999999)    G = 999999999;
 
-      // sync Gil controls & labels
+      // sync Gil controls
       gilInput.value = G;
       gilSlider.value = G;
       gilLabel.textContent = G.toLocaleString();
 
+      // update labels
+      lvlLabel.textContent    = Z;
+      matLabel.textContent    = M;
       commandLabel.textContent = numAttacks;
       commandMult.textContent  = `(DPH ×${commandMultiplier})`;
       stanceLabel.textContent  = `${stancePercent}%`;
       stanceMult.textContent   = stancePercent === 25 ? '(DPH ×3)' : '(DPH ×2)';
-      lvlLabel.textContent     = Z;
-      matLabel.textContent     = M;
 
-      // ensure only one damage cap
+      // ensure mutual‑exclusion of caps
+      // (the oninput handlers already enforce it, this is a safety net)
       if (cap9999 && cap99999) capBreak.checked = false;
 
-      // core calculations
+      // core math
       const gilFloat  = G / 1000;
-      const gilOff    = Z === 99 ? 980 - 50*M : M < 3 ? 10*Z - 60 : 10*Z - 160;
+      const gilOff    = Z === 99
+                        ? 980 - 50*M
+                        : M < 3
+                          ? 10*Z - 60
+                          : 10*Z - 160;
       const base      = M*150 + Z*30 + gilFloat + gilOff;
       const normalDPH = Math.floor(2*base + 20);
       const rawHits   = Math.ceil(G / normalDPH);
       const clamped   = Math.min(rawHits, 5);
       const gilRem    = Math.max(G - clamped*normalDPH, 0);
 
-      let dph        = normalDPH;
-      let breakdown  = '';
+      let dph       = normalDPH;
+      let breakdown = '';
 
       if (isCrit) {
         breakdown += `
@@ -352,7 +348,7 @@
             <span class="code">${dph} × ${commandMultiplier}</span>
             <div class="result">Result: ${Math.floor(dph*commandMultiplier)}</div>
           </div>`;
-        dph = Math.floor(dph * commandMultiplier);
+        dph = Math.floor(dph*commandMultiplier);
       }
       if (isStance) {
         const sm = stancePercent === 25 ? 3 : 2;
@@ -389,9 +385,9 @@
         <div class="results-title">Final Results</div>
         <div>Total Damage: <span>${totalDamage.toLocaleString()}</span></div>
         <div>Hits: <span>${clamped}</span></div>
-        <div>Damage Per Hit: <span>${dph.toLocaleString()}</span></div>
-        <div>Gil Consumed: <span>${(clamped*normalDPH).toLocaleString()}</span></div>
-        <div>Gil Remaining: <span>${gilRem.toLocaleString()}</span></div>`;
+        <div>Damage Per Hit: <span>${dph.toLocaleString()}</span></div>
+        <div>Gil Consumed: <span>${(clamped*normalDPH).toLocaleString()}</span></div>
+        <div>Gil Remaining: <span>${gilRem.toLocaleString()}</span></div>`;
 
       stepsDiv.innerHTML = `
         <div class="step">
@@ -401,7 +397,11 @@
         </div>
         <div class="step">
           <h3>STEP 2: GIL_OFFSET</h3>
-          <span class="code">${Z === 99 ? `980 − (50 × ${M})` : M < 3 ? `(10 × ${Z}) − 60` : `(10 × ${Z}) − 160`}</span>
+          <span class="code">${Z === 99
+                               ? `980 − (50 × ${M})`
+                               : M < 3
+                                 ? `(10 × ${Z}) − 60`
+                                 : `(10 × ${Z}) − 160`}</span>
           <div class="result">Result: ${gilOff}</div>
         </div>
         <div class="step">
@@ -417,7 +417,7 @@
         ${breakdown}
         <div class="step">
           <h3>STEP 5: HITS</h3>
-          <span class="code">ceil(${G} ÷ ${normalDPH}) → ${rawHits}, clamped to 5</span>
+          <span class="code">ceil(${G} ÷ ${normalDPH}) → ${rawHits}, clamped to 5</span>
           <div class="result">Hits: ${clamped}</div>
         </div>
         <div class="step">
@@ -427,21 +427,21 @@
         </div>`;
     }
 
-    // EVENT HANDLERS
+    // wire up inputs
     lvlSlider.oninput  = updateUI;
     matSlider.oninput  = updateUI;
 
     gilSlider.oninput = () => {
       const s = snapGil(+gilSlider.value);
-      gilInput.value = s;
+      gilInput.value  = s;
       gilSlider.value = s;
       updateUI();
     };
     gilInput.oninput = () => {
       let v = parseInt(gilInput.value.replace(/\D/g,''),10);
-      if (isNaN(v)||v<1) v=1;
-      if (v>999999999)  v=999999999;
-      gilInput.value = v;
+      if (isNaN(v)||v<1) v = 1;
+      if (v>999999999)  v = 999999999;
+      gilInput.value  = v;
       gilSlider.value = v;
       updateUI();
     };
@@ -450,7 +450,7 @@
 
     commandToggle.oninput = () => {
       if (commandToggle.checked) {
-        // if enabling Command, auto‐disable Stance
+        // auto‑disable stance
         stanceToggle.checked = false;
         stanceSliderContainer.style.display = 'none';
       }
@@ -460,7 +460,7 @@
 
     stanceToggle.oninput = () => {
       if (stanceToggle.checked) {
-        // if enabling Stance, auto‐disable Command
+        // auto‑disable command
         commandToggle.checked = false;
         commandSliderContainer.style.display = 'none';
       }
@@ -468,12 +468,26 @@
       updateUI();
     };
 
+    capNormal.oninput = () => {
+      if (capNormal.checked) {
+        // auto‑disable break cap
+        capBreak.checked = false;
+      }
+      updateUI();
+    };
+
+    capBreak.oninput = () => {
+      if (capBreak.checked) {
+        // auto‑disable normal cap
+        capNormal.checked = false;
+      }
+      updateUI();
+    };
+
     commandSlider.oninput = updateUI;
     stanceSlider.oninput  = updateUI;
-    capNormal.oninput     = updateUI;
-    capBreak.oninput      = updateUI;
 
-    // initial draw
+    // initial render
     updateUI();
   </script>
 </body>
