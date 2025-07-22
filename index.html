@@ -62,6 +62,7 @@
       border-radius: 4px;
       color: #f8f8f2;
     }
+
     .results {
       background: #1c1d2a;
       border: 1px solid #444;
@@ -163,6 +164,16 @@
       font-weight: bold;
       font-size: 0.95em;
     }
+
+    #stanceSliderContainer {
+      display: none;
+      margin-top: 1em;
+    }
+    #stanceSliderLabel {
+      font-weight: bold;
+      margin-top: 1em;
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -192,12 +203,29 @@
         <input type="number" id="gilInput" min="1" max="999999999" step="1" value="1000"/>
 
         <h3>Damage Modifiers</h3>
+
+        <!-- Critical Hits -->
         <div class="toggle-group">
           <label class="toggle-wrapper">
             <input type="checkbox" id="critToggle" />
             <span class="toggle-slider"></span>
-            <span class="toggle-label">Critical Hits (×2 DPH)</span>
+            <span class="toggle-label">Critical Hits (DPH ×2)</span>
           </label>
+        </div>
+
+        <!-- Battle Stance -->
+        <div class="toggle-group">
+          <label class="toggle-wrapper">
+            <input type="checkbox" id="stanceToggle" />
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Battle Stance</span>
+          </label>
+        </div>
+
+        <!-- Command Proficiency Slider -->
+        <div id="stanceSliderContainer">
+          <label id="stanceSliderLabel">Command Proficiency: <span id="stanceLabel">0%</span> <span id="stanceMult">(DPH ×2)</span></label>
+          <input type="range" id="stanceSlider" min="0" max="25" step="25" value="0" />
         </div>
 
         <div class="results" id="finalResults">
@@ -217,6 +245,10 @@
     const gilSlider = document.getElementById('gilSlider');
     const gilInput = document.getElementById('gilInput');
     const critToggle = document.getElementById('critToggle');
+    const stanceToggle = document.getElementById('stanceToggle');
+    const stanceSlider = document.getElementById('stanceSlider');
+    const stanceLabel = document.getElementById('stanceLabel');
+    const stanceSliderContainer = document.getElementById('stanceSliderContainer');
     const lvlLabel = document.getElementById('lvlLabel');
     const matLabel = document.getElementById('matLabel');
     const gilLabel = document.getElementById('gilLabel');
@@ -235,6 +267,9 @@
       const Z = +lvlSlider.value;
       const M = +matSlider.value;
       const isCrit = critToggle.checked;
+      const isStance = stanceToggle.checked;
+      const stancePercent = isStance ? +stanceSlider.value : 0;
+
       let G = parseInt(gilInput.value.replace(/\D/g, ''), 10);
       if (isNaN(G) || G < 1) G = 1;
       if (G > 999999999) G = 999999999;
@@ -242,16 +277,23 @@
       gilInput.value = G;
       gilSlider.value = G;
       gilLabel.textContent = G.toLocaleString();
+      stanceLabel.textContent = stancePercent + "%";
+      document.getElementById('stanceMult').textContent = stancePercent === 25 ? "(DPH ×3)" : "(DPH ×2)";
+
 
       const gilFloat = G / 1000;
-      let gilOff = Z === 99 ? 980 - 50 * M : M < 3 ? 10 * Z - 60 : 10 * Z - 160;
+      const gilOff = Z === 99 ? 980 - 50 * M : M < 3 ? 10 * Z - 60 : 10 * Z - 160;
       const base = M * 150 + Z * 30 + gilFloat + gilOff;
       const normalDPH = Math.floor(2 * base + 20);
       const rawHits = Math.ceil(G / normalDPH);
       const clamped = Math.min(rawHits, 5);
       const gilRem = Math.max(G - clamped * normalDPH, 0);
-      const finalDPH = isCrit ? normalDPH * 2 : normalDPH;
-      const totalDamage = clamped * finalDPH;
+
+      let dph = normalDPH;
+      if (isCrit) dph *= 2;
+      if (isStance) dph *= stancePercent === 25 ? 3 : 2;
+
+      const totalDamage = clamped * dph;
 
       lvlLabel.textContent = Z;
       matLabel.textContent = M;
@@ -260,7 +302,7 @@
         <div class="results-title">Final Results</div>
         <div>Total Damage: <span>${totalDamage.toLocaleString()}</span></div>
         <div>Hits: <span>${clamped}</span></div>
-        <div>Damage Per Hit: <span>${finalDPH.toLocaleString()}</span></div>
+        <div>Damage Per Hit: <span>${dph.toLocaleString()}</span></div>
         <div>Gil Consumed: <span>${(clamped * normalDPH).toLocaleString()}</span></div>
         <div>Gil Remaining: <span>${gilRem.toLocaleString()}</span></div>
       `;
@@ -286,15 +328,18 @@
           <span class="code">floor(2 × ${base.toFixed(3)} + 20)</span>
           <div class="result">Result: ${normalDPH}</div>
         </div>
-        ${
-          isCrit
-            ? `<div class="step">
-                <h3>CRITICAL HIT MODIFIER</h3>
-                <span class="code">DPH × 2 = ${normalDPH} × 2</span>
-                <div class="result">Result: ${finalDPH}</div>
-              </div>`
-            : ''
-        }
+        ${isCrit ? `
+        <div class="step">
+          <h3>CRITICAL HIT MODIFIER</h3>
+          <span class="code">${normalDPH} × 2</span>
+          <div class="result">Result: ${normalDPH * 2}</div>
+        </div>` : ``}
+        ${isStance ? `
+        <div class="step">
+          <h3>BATTLE STANCE MODIFIER</h3>
+          <span class="code">DPH × ${stancePercent === 25 ? 3 : 2}</span>
+          <div class="result">Result: ${dph}</div>
+        </div>` : ``}
         <div class="step">
           <h3>STEP 5: RAW_HITS & CLAMP</h3>
           <span class="code">ceil(${G} ÷ ${normalDPH}) → ${rawHits}<br/>clamped to max 5</span>
@@ -311,6 +356,11 @@
     lvlSlider.oninput = updateUI;
     matSlider.oninput = updateUI;
     critToggle.oninput = updateUI;
+    stanceToggle.oninput = () => {
+      stanceSliderContainer.style.display = stanceToggle.checked ? 'block' : 'none';
+      updateUI();
+    };
+    stanceSlider.oninput = updateUI;
 
     gilSlider.oninput = () => {
       const snapped = snapGil(+gilSlider.value);
