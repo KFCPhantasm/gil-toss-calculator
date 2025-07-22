@@ -249,10 +249,7 @@
 
         <div class="results" id="finalResults">
           <div class="results-title">Final Results</div>
-          <!-- Final results will be injected here -->
         </div>
-
-        <!-- Gil Toss button OUTSIDE the results box -->
         <button id="tossButton">Gil Toss</button>
       </aside>
       <section class="panel breakdown">
@@ -289,11 +286,11 @@
 
     function updateUI() {
       const Z = +lvlSlider.value, M = +matSlider.value;
-      const isCrit    = critToggle.checked;
-      const isCmd     = commandToggle.checked;
-      const isStn     = stanceToggle.checked;
-      const cap9999   = capNormal.checked;
-      const cap99999  = capBreak.checked;
+      const isCrit   = critToggle.checked;
+      const isCmd    = commandToggle.checked;
+      const isStn    = stanceToggle.checked;
+      const cap9999  = capNormal.checked;
+      const cap99999 = capBreak.checked;
 
       // show/hide modifier sliders
       commandSliderContainer.style.display = isCmd   ? 'block' : 'none';
@@ -306,8 +303,7 @@
 
       // sanitize Gil from input
       let G = parseInt(gilInput.value.replace(/\D/g,''), 10) || 0;
-      if (G < 0) G = 0;
-      if (G > 999999999) G = 999999999;
+      G = Math.max(0, Math.min(G, 999999999));
 
       // sync controls & label
       gilInput.value = G;
@@ -330,16 +326,16 @@
                           ? 10*Z - 60
                           : 10*Z - 160;
       const base      = M*150 + Z*30 + gilFloat + gilOff;
-      const normalDPH = Math.floor(2*base + 20);
-      const rawHits   = G > 0 ? Math.ceil(G / normalDPH) : 0;
+      let   dph       = Math.floor(2*base + 20);
+      const rawHits   = G > 0 ? Math.ceil(G / dph) : 0;
       const clamped   = Math.min(rawHits, 5);
-      const gilRem    = Math.max(G - clamped*normalDPH, 0);
+      const gilRem    = Math.max(G - clamped*dph, 0);
 
       // disable toss if no Gil
       tossButton.disabled = (G <= 0);
 
-      // build breakdown steps
-      let dph = normalDPH, breakdownHTML = '';
+      // build breakdown
+      let breakdownHTML = '';
       if (isCrit) {
         breakdownHTML += `
           <div class="step">
@@ -393,45 +389,21 @@
         <div>Total Damage: <span>${(clamped*dph).toLocaleString()}</span></div>
         <div>Hits: <span>${clamped}</span></div>
         <div>Damage Per Hit: <span>${dph.toLocaleString()}</span></div>
-        <div>Gil Consumed: <span>${(clamped*normalDPH).toLocaleString()}</span></div>
+        <div>Gil Consumed: <span>${(clamped*Math.floor(2*base + 20)).toLocaleString()}</span></div>
         <div>Gil Remaining: <span>${gilRem.toLocaleString()}</span></div>
       `;
+
+      // render breakdown
       stepsDiv.innerHTML = `
-        <div class="step">
-          <h3>STEP 1: GIL_FLOAT</h3>
-          <span class="code">${G} ÷ 1000</span>
-          <div class="result">${gilFloat.toFixed(3)}</div>
-        </div>
-        <div class="step">
-          <h3>STEP 2: GIL_OFFSET</h3>
-          <span class="code">${Z === 99
-                               ? `980 − (50 × ${M})`
-                               : M < 3
-                                 ? `(10 × ${Z}) − 60`
-                                 : `(10 × ${Z}) − 160`}</span>
-          <div class="result">${gilOff}</div>
-        </div>
-        <div class="step">
-          <h3>STEP 3: BASE</h3>
-          <span class="code">${M} × 150 + ${Z} × 30 + ${gilFloat.toFixed(3)} + ${gilOff}</span>
-          <div class="result">${base.toFixed(3)}</div>
-        </div>
-        <div class="step">
-          <h3>STEP 4: DAMAGE PER HIT</h3>
-          <span class="code">floor(2 × ${base.toFixed(3)} + 20)</span>
-          <div class="result">${normalDPH}</div>
-        </div>
+        <div class="step"><h3>STEP 1: GIL_FLOAT</h3><span class="code">${G} ÷ 1000</span><div class="result">${gilFloat.toFixed(3)}</div></div>
+        <div class="step"><h3>STEP 2: GIL_OFFSET</h3><span class="code">${
+          Z === 99 ? `980 − (50 × ${M})` : M < 3 ? `(10 × ${Z}) − 60` : `(10 × ${Z}) − 160`
+        }</span><div class="result">${gilOff}</div></div>
+        <div class="step"><h3>STEP 3: BASE</h3><span class="code">${M} × 150 + ${Z} × 30 + ${gilFloat.toFixed(3)} + ${gilOff}</span><div class="result">${base.toFixed(3)}</div></div>
+        <div class="step"><h3>STEP 4: DAMAGE PER HIT</h3><span class="code">floor(2 × ${base.toFixed(3)} + 20)</span><div class="result">${Math.floor(2*base + 20)}</div></div>
         ${breakdownHTML}
-        <div class="step">
-          <h3>STEP 5: HITS</h3>
-          <span class="code">ceil(${G} ÷ ${normalDPH}) → ${rawHits}, clamped to 5</span>
-          <div class="result">${clamped}</div>
-        </div>
-        <div class="step">
-          <h3>STEP 6: GIL_REMAINING</h3>
-          <span class="code">${G} − (${clamped} × ${normalDPH})</span>
-          <div class="result">${gilRem}</div>
-        </div>
+        <div class="step"><h3>STEP 5: HITS</h3><span class="code">ceil(${G} ÷ ${Math.floor(2*base + 20)}) → ${rawHits}, clamped to 5</span><div class="result">${clamped}</div></div>
+        <div class="step"><h3>STEP 6: GIL_REMAINING</h3><span class="code">${G} − (${clamped} × ${Math.floor(2*base + 20)})</span><div class="result">${gilRem}</div></div>
       `;
     }
 
@@ -463,8 +435,7 @@
     });
     gilInput.addEventListener('input', () => {
       let v = parseInt(gilInput.value.replace(/\D/g,''),10) || 0;
-      if (v < 0) v = 0;
-      if (v > 999999999) v = 999999999;
+      v = Math.max(0, Math.min(v, 999999999));
       gilInput.value = v;
       gilSlider.value = v;
       updateUI();
@@ -478,27 +449,26 @@
       if (stanceToggle.checked) commandToggle.checked = false;
       updateUI();
     });
-    capNormal.addEventListener('input', updateUI);
-    capBreak.addEventListener('input', updateUI);
     commandSlider.addEventListener('input', updateUI);
     stanceSlider.addEventListener('input', updateUI);
     tossButton.addEventListener('click', performGilToss);
 
     // initial render
     updateUI();
-    // ensure only one damage‐cap toggle can be active at a time
-capNormal.addEventListener('change', () => {
-  if (capNormal.checked) {
-    capBreak.checked = false;
-    updateUI();
-  }
-});
-capBreak.addEventListener('change', () => {
-  if (capBreak.checked) {
-    capNormal.checked = false;
-    updateUI();
-  }
-});
+
+    // ensure only one damage‑cap toggle can be active at a time
+    capNormal.addEventListener('change', () => {
+      if (capNormal.checked) {
+        capBreak.checked = false;
+        updateUI();
+      }
+    });
+    capBreak.addEventListener('change', () => {
+      if (capBreak.checked) {
+        capNormal.checked = false;
+        updateUI();
+      }
+    });
   </script>
 </body>
 </html>
