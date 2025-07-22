@@ -489,6 +489,19 @@
 
     // initial render
     updateUI();
+    // ensure only one damage‐cap toggle can be active at a time
+capNormal.addEventListener('change', () => {
+  if (capNormal.checked) {
+    capBreak.checked = false;
+    updateUI();
+  }
+});
+capBreak.addEventListener('change', () => {
+  if (capBreak.checked) {
+    capNormal.checked = false;
+    updateUI();
+  }
+});
   </script>
 </body>
 </html>
