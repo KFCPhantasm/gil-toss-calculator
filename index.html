@@ -350,7 +350,7 @@
           <div class="result">${base.toFixed(3)}</div>
         </div>
         <div class="step">
-          <h3>STEP 4: DAMAGE PER HIT</h3>
+          <h3>STEP 4: DAMAGE PER HIT (DPH)</h3>
           <span class="code">floor(2×${base.toFixed(3)} + 20)</span>
           <div class="result">${preCapDph}</div>
         </div>`;
@@ -358,7 +358,7 @@
       if (isCrit) {
         html += `
         <div class="step">
-          <h3>CRITICAL HIT</h3>
+          <h3>CRITICAL HITS</h3>
           <span class="code">${preCapDph} × 2</span>
           <div class="result">${preCapDph*2}</div>
         </div>`;
@@ -403,7 +403,7 @@
 
       html += `
         <div class="step">
-          <h3>STEP 5: HITS</h3>
+          <h3>STEP 5: RAW_HITS & CLAMP</h3>
           <span class="code">ceil(${G} ÷ ${preCapDph}) → ${rawHits}, clamped to 5</span>
           <div class="result">${clamped}</div>
         </div>
