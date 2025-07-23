@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -178,7 +178,7 @@
       border: none;
       width: 12ch;
       min-width: 0;
-      max-width: 100%;    
+      max-width: 100%;
     }
   </style>
 </head>
@@ -197,7 +197,6 @@
         <label>Materia Level: <span id="matLabel">1</span></label>
         <input type="range" id="matLevel" min="1" max="5" value="1"/>
         <label>Current Gil: <span id="gilLabel">1,000</span></label>
-        <!-- Added initial value="1000" so slider starts aligned -->
         <input type="range" id="gilSlider" min="0" max="999999999" step="1000" value="1000"/>
         <input type="number" id="gilInput" min="0" max="999999999" step="1" value="1000"/>
 
@@ -292,36 +291,29 @@
     function updateUI() {
       const Z = +lvlSlider.value;
       const M = +matSlider.value;
-      // Always read G from the number input (synced by handlers below)
       let G = parseInt(gilInput.value.replace(/\D/g, ''), 10) || 0;
       G = Math.max(0, Math.min(G, 999999999));
 
-      // Sync slider & label
       gilInput.value = G;
       gilSlider.value = G;
       gilLabel.textContent = G.toLocaleString();
-
       lvlLabel.textContent = Z;
       matLabel.textContent = M;
 
-      // Show/hide modifier sliders
       commandSliderContainer.style.display = commandToggle.checked ? 'block' : 'none';
       stanceSliderContainer.style.display  = stanceToggle.checked  ? 'block' : 'none';
 
-      // Modifiers
       const isCrit   = critToggle.checked;
       const isCmd    = commandToggle.checked;
       const isStn    = stanceToggle.checked;
       const cap9999  = capNormal.checked;
       const cap99999 = capBreak.checked;
 
-      // Command multipliers
       const numAttacks = isCmd ? +commandSlider.value : 2;
       commandLabel.textContent = numAttacks;
       const cmdMult = numAttacks === 2 ? 1.2 : numAttacks === 3 ? 1.5 : 1.8;
       commandMult.textContent = `(DPH × ${cmdMult.toFixed(1)})`;
 
-      // Stance multiplier
       const stnPct = isStn ? +stanceSlider.value : 0;
       stanceLabel.textContent = `${stnPct}%`;
       const stanceMultVal = stnPct === 25 ? 3 : 2;
@@ -329,28 +321,18 @@
 
       // === CORE FORMULA ===
       const gilFloat = G / 1000;
-      let gilOff;
-      if (Z === 99) {
-        gilOff = 980 - 50 * M;
-      } else if (M === 3) {
-        gilOff = (10 * Z) - 160 - 20;
-      } else if (M < 3) {
-        gilOff = (10 * Z) - 60;
-      } else {
-        gilOff = (10 * Z) - 160;
-      }
-      const base = (M * 150) + (Z * 30) + gilFloat + gilOff;
-      let dph = Math.floor(2 * base + 20);
+      const gilOff   = (10 * Z) - (50 * M + 10);
+
+      const base     = (M * 150) + (Z * 30) + gilFloat + gilOff;
+      let dph        = Math.floor(2 * base + 20);
       const preCapDph = dph;
 
-      // Hits & remaining Gil
       const rawHits = G > 0 ? Math.ceil(G / preCapDph) : 0;
       const clamped = Math.min(rawHits, 5);
-      let gilRem    = Math.max(G - (clamped * preCapDph), 0);
+      const gilRem  = Math.max(G - (clamped * preCapDph), 0);
 
       tossButton.disabled = G <= 0;
 
-      // === BUILD BREAKDOWN HTML ===
       let html = `
         <div class="step">
           <h3>STEP 1: GIL_FLOAT</h3>
@@ -359,12 +341,7 @@
         </div>
         <div class="step">
           <h3>STEP 2: GIL_OFFSET</h3>
-          <span class="code">${
-            Z===99 ? `980 − (50×${M})`
-            : M===3 ? `(10×${Z}) − 160 − 20`
-            : M<3  ? `(10×${Z}) − 60`
-            : `(10×${Z}) − 160`
-          }</span>
+          <span class="code">(10×${Z}) − (50×${M} + 10)</span>
           <div class="result">${gilOff}</div>
         </div>
         <div class="step">
@@ -378,57 +355,52 @@
           <div class="result">${preCapDph}</div>
         </div>`;
 
-      // Critical
       if (isCrit) {
         html += `
-          <div class="step">
-            <h3>CRITICAL HIT</h3>
-            <span class="code">${dph} × 2</span>
-            <div class="result">${dph*2}</div>
-          </div>`;
+        <div class="step">
+          <h3>CRITICAL HIT</h3>
+          <span class="code">${preCapDph} × 2</span>
+          <div class="result">${preCapDph*2}</div>
+        </div>`;
         dph *= 2;
       }
-      // Command
       if (isCmd) {
         html += `
-          <div class="step">
-            <h3>ATTACK → COMMAND</h3>
-            <span class="code">${dph} × ${cmdMult.toFixed(1)}</span>
-            <div class="result">${Math.floor(dph*cmdMult)}</div>
-          </div>`;
+        <div class="step">
+          <h3>ATTACK → COMMAND</h3>
+          <span class="code">${dph} × ${cmdMult.toFixed(1)}</span>
+          <div class="result">${Math.floor(dph*cmdMult)}</div>
+        </div>`;
         dph = Math.floor(dph*cmdMult);
       }
-      // Stance
       if (isStn) {
         html += `
-          <div class="step">
-            <h3>BATTLE STANCE</h3>
-            <span class="code">${dph} × ${stanceMultVal}</span>
-            <div class="result">${dph*stanceMultVal}</div>
-          </div>`;
+        <div class="step">
+          <h3>BATTLE STANCE</h3>
+          <span class="code">${dph} × ${stanceMultVal}</span>
+          <div class="result">${dph*stanceMultVal}</div>
+        </div>`;
         dph *= stanceMultVal;
       }
-      // Caps
       if (cap9999 && dph > 9999) {
         html += `
-          <div class="step">
-            <h3>DAMAGE CAP: NORMAL (9999)</h3>
-            <span class="code">min(${dph}, 9999)</span>
-            <div class="result">9999</div>
-          </div>`;
+        <div class="step">
+          <h3>DAMAGE CAP: NORMAL (9999)</h3>
+          <span class="code">min(${dph}, 9999)</span>
+          <div class="result">9999</div>
+        </div>`;
         dph = 9999;
       }
       if (cap99999 && dph > 99999) {
         html += `
-          <div class="step">
-            <h3>DAMAGE CAP: BREAK (99999)</h3>
-            <span class="code">min(${dph}, 99999)</span>
-            <div class="result">99999</div>
-          </div>`;
+        <div class="step">
+          <h3>DAMAGE CAP: BREAK (99999)</h3>
+          <span class="code">min(${dph}, 99999)</span>
+          <div class="result">99999</div>
+        </div>`;
         dph = 99999;
       }
 
-      // Steps 5 & 6
       html += `
         <div class="step">
           <h3>STEP 5: HITS</h3>
@@ -441,7 +413,7 @@
           <div class="result">${gilRem}</div>
         </div>`;
 
-      stepsDiv.innerHTML    = html;
+      stepsDiv.innerHTML = html;
       finalDiv.innerHTML = `
         <div class="results-title">Final Results</div>
         <div>Total Damage: <span>${(clamped*dph).toLocaleString()}</span></div>
@@ -453,26 +425,20 @@
     }
 
     function performGilToss() {
-      // Use the same core math, then subtract gil
       const G0 = parseInt(gilInput.value.replace(/\D/g,''),10) || 0;
-      const Z = +lvlSlider.value, M = +matSlider.value;
-      const gilFloat = G0/1000;
-      let gilOff;
-      if (Z===99) gilOff = 980-50*M;
-      else if (M===3) gilOff = (10*Z)-160-20;
-      else if (M<3) gilOff = (10*Z)-60;
-      else gilOff = (10*Z)-160;
-      const base      = M*150 + Z*30 + gilFloat + gilOff;
-      const normalDPH = Math.floor(2*base+20);
-      const rawHits   = G0>0 ? Math.ceil(G0/normalDPH):0;
-      const clamped   = Math.min(rawHits,5);
-      const newRem    = Math.max(G0 - clamped*normalDPH,0);
+      const Z  = +lvlSlider.value, M = +matSlider.value;
+      const gilFloat = G0 / 1000;
+      const gilOff   = (10 * Z) - (50 * M + 10);
+      const base     = M*150 + Z*30 + gilFloat + gilOff;
+      const normalDPH= Math.floor(2*base + 20);
+      const rawHits  = G0 > 0 ? Math.ceil(G0/normalDPH) : 0;
+      const clamped  = Math.min(rawHits, 5);
+      const newRem   = Math.max(G0 - clamped*normalDPH, 0);
 
       gilInput.value = newRem;
       updateUI();
     }
 
-    // Manual Gil slider ↔ number binding
     gilSlider.addEventListener('input', () => {
       const v = parseInt(gilSlider.value,10)||0;
       gilInput.value = v;
@@ -485,32 +451,21 @@
       gilSlider.value = v;
       updateUI();
     });
-
-    // All the rest simply rerun updateUI on change/input
     [lvlSlider, matSlider, critToggle, commandToggle,
      stanceToggle, commandSlider, stanceSlider]
       .forEach(el => {
         el.addEventListener('input', updateUI);
         el.addEventListener('change', updateUI);
       });
-
-    // Only one cap at once—and refresh immediately
     capNormal.addEventListener('change', () => {
-      if (capNormal.checked) {
-        capBreak.checked = false;
-      }
+      if (capNormal.checked) capBreak.checked = false;
       updateUI();
     });
     capBreak.addEventListener('change', () => {
-      if (capBreak.checked) {
-        capNormal.checked = false;
-      }
+      if (capBreak.checked) capNormal.checked = false;
       updateUI();
     });
-
     tossButton.addEventListener('click', performGilToss);
-
-    // Initial render
     updateUI();
   </script>
 </body>
