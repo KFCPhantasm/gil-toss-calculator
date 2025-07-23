@@ -177,6 +177,15 @@
       margin-top: 1em;
       display: block;
     }
+ /* Remove spinner arrows from the Current Gil input */
+    #gilInput::-webkit-outer-spin-button,
+    #gilInput::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    #gilInput[type="number"] {
+      -moz-appearance: textfield;
+    }
   </style>
 </head>
 <body>
