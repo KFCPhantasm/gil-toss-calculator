@@ -230,10 +230,10 @@
         </div>
         <div id="stanceSliderContainer">
           <label id="stanceSliderLabel">
-            Command Proficiency: <span id="stanceLabel">0%</span>
-            <span id="stanceMult">(DPH ×2)</span>
+            Command Proficiency: <span id="stanceLabel">0.00%</span>
+            <span id="stanceMult">(DPH ×2.00)</span>
           </label>
-          <input type="range" id="stanceSlider" min="0" max="25" step="25" value="0" />
+          <input type="range" id="stanceSlider" min="0" max="25" step="0.25" value="0" />
         </div>
 
         <h3>Damage Caps</h3>
@@ -314,10 +314,11 @@
       const cmdMult = numAttacks === 2 ? 1.2 : numAttacks === 3 ? 1.5 : 1.8;
       commandMult.textContent = `(DPH × ${cmdMult.toFixed(1)})`;
 
+      // Updated Battle Stance logic
       const stnPct = isStn ? +stanceSlider.value : 0;
-      stanceLabel.textContent = `${stnPct}%`;
-      const stanceMultVal = stnPct === 25 ? 3 : 2;
-      stanceMult.textContent = `(DPH × ${stanceMultVal})`;
+      stanceLabel.textContent = `${stnPct.toFixed(2)}%`;
+      const stanceMultVal = +(2 + stnPct/25).toFixed(2);
+      stanceMult.textContent = `(DPH × ${stanceMultVal.toFixed(2)})`;
 
       // === CORE FORMULA ===
       const gilFloat = G / 1000;
@@ -360,7 +361,7 @@
         <div class="step">
           <h3>CRITICAL HITS</h3>
           <span class="code">${preCapDph} × 2</span>
-          <div class="result">${preCapDph*2}</div>
+          <div class="result">${preCapDph * 2}</div>
         </div>`;
         dph *= 2;
       }
@@ -369,18 +370,20 @@
         <div class="step">
           <h3>ATTACK → COMMAND</h3>
           <span class="code">${dph} × ${cmdMult.toFixed(1)}</span>
-          <div class="result">${Math.floor(dph*cmdMult)}</div>
+          <div class="result">${Math.floor(dph * cmdMult)}</div>
         </div>`;
-        dph = Math.floor(dph*cmdMult);
+        dph = Math.floor(dph * cmdMult);
       }
       if (isStn) {
+        // floor the post‑stance damage
+        const stanceResult = Math.floor(dph * stanceMultVal);
         html += `
         <div class="step">
           <h3>BATTLE STANCE</h3>
-          <span class="code">${dph} × ${stanceMultVal}</span>
-          <div class="result">${dph*stanceMultVal}</div>
+          <span class="code">${dph} × ${stanceMultVal.toFixed(2)}</span>
+          <div class="result">${stanceResult}</div>
         </div>`;
-        dph *= stanceMultVal;
+        dph = stanceResult;
       }
       if (cap9999 && dph > 9999) {
         html += `
@@ -416,10 +419,10 @@
       stepsDiv.innerHTML = html;
       finalDiv.innerHTML = `
         <div class="results-title">Final Results</div>
-        <div>Total Damage: <span>${(clamped*dph).toLocaleString()}</span></div>
+        <div>Total Damage: <span>${(clamped * dph).toLocaleString()}</span></div>
         <div>Hits: <span>${clamped}</span></div>
         <div>Damage Per Hit: <span>${dph.toLocaleString()}</span></div>
-        <div>Gil Consumed: <span>${(clamped*preCapDph).toLocaleString()}</span></div>
+        <div>Gil Consumed: <span>${(clamped * preCapDph).toLocaleString()}</span></div>
         <div>Gil Remaining: <span>${gilRem.toLocaleString()}</span></div>
       `;
     }
