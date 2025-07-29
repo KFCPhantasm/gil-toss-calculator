@@ -314,13 +314,11 @@
       const cmdMult = numAttacks === 2 ? 1.2 : numAttacks === 3 ? 1.5 : 1.8;
       commandMult.textContent = `(DPH × ${cmdMult.toFixed(1)})`;
 
-      // Updated Battle Stance logic
       const stnPct = isStn ? +stanceSlider.value : 0;
       stanceLabel.textContent = `${stnPct.toFixed(2)}%`;
       const stanceMultVal = +(2 + stnPct/25).toFixed(2);
       stanceMult.textContent = `(DPH × ${stanceMultVal.toFixed(2)})`;
 
-      // === CORE FORMULA ===
       const gilFloat = G / 1000;
       const gilOff   = (10 * Z) - (50 * M + 10);
 
@@ -375,7 +373,6 @@
         dph = Math.floor(dph * cmdMult);
       }
       if (isStn) {
-        // floor the post‑stance damage
         const stanceResult = Math.floor(dph * stanceMultVal);
         html += `
         <div class="step">
@@ -468,6 +465,17 @@
       if (capBreak.checked) capNormal.checked = false;
       updateUI();
     });
+
+    // Ensure Attack → Command and Battle Stance toggles are mutually exclusive
+    commandToggle.addEventListener('change', () => {
+      if (commandToggle.checked) stanceToggle.checked = false;
+      updateUI();
+    });
+    stanceToggle.addEventListener('change', () => {
+      if (stanceToggle.checked) commandToggle.checked = false;
+      updateUI();
+    });
+
     tossButton.addEventListener('click', performGilToss);
     updateUI();
   </script>
